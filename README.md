@@ -1,4 +1,4 @@
-
+WEBSITE LINK-https://dhathrirudroju.github.io/PharmaAI/
 # PharmaAI
 PharmaAI: Introduction PharmaAI is a revolutionary healthcare platform that bridges the gap between complex medical data and intuitive visual understanding. By integrating Computer Vision, Deep Learning, and 3D Bio-Simulation, the app transforms how patients, students, and healthcare professionals interact with medicine.
 
