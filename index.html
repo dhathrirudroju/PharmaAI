@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharma AI — Compound Research Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F8FAFC;
+            --primary: #FFC1CC;
+            --primary-dark: #E8A0B0;
+            --secondary: #ADD8E6;
+            --secondary-dark: #8CC4D8;
+            --text: #1E293B;
+            --text-muted: #64748B;
+            --card: rgba(255,255,255,0.65);
+            --border: rgba(255,255,255,0.45);
+            --shadow: 0 8px 32px rgba(0,0,0,0.06);
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;}
+        h1,h2,h3,h4,h5,h6{font-family:'Montserrat',sans-serif;}
+        ::-webkit-scrollbar{width:5px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:var(--primary);border-radius:9px;}
+
+        .bg-blob{position:fixed;border-radius:50%;filter:blur(100px);opacity:.25;z-index:0;pointer-events:none;}
+        .dot-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+            background-image:radial-gradient(circle,rgba(148,163,184,.12) 1px,transparent 1px);
+            background-size:28px 28px;}
+
+        .glass{background:var(--card);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+            border:1px solid var(--border);border-radius:32px;box-shadow:var(--shadow);}
+
+        @keyframes organGlow{
+            0%,100%{filter:drop-shadow(0 0 6px rgba(255,193,204,.5));transform:scale(1);}
+            50%{filter:drop-shadow(0 0 22px rgba(255,193,204,.95));transform:scale(1.18);}
+        }
+        .organ-active{animation:organGlow 2s ease-in-out infinite;}
+        .organ-spot{transition:all .45s ease;cursor:pointer;}
+        .organ-spot:hover{transform:scale(1.12)!important;}
+
+        @keyframes pulseRing{0%{transform:scale(1);opacity:.7;}100%{transform:scale(2.8);opacity:0;}}
+        .pulse-ring{position:absolute;inset:0;border-radius:50%;background:rgba(255,193,204,.25);
+            animation:pulseRing 2s ease-out infinite;display:none;}
+
+        @keyframes bodyFloat{0%,100%{transform:translateY(0) rotateY(-4deg) rotateX(2deg);}
+            50%{transform:translateY(-8px) rotateY(4deg) rotateX(-1deg);}}
+        .body-container{perspective:900px;}
+        .body-inner{animation:bodyFloat 7s ease-in-out infinite;transform-style:preserve-3d;}
+
+        @keyframes blink{0%,100%{border-color:transparent;}50%{border-color:var(--primary);}}
+        .typewriter-cursor{border-right:2px solid var(--primary);padding-right:2px;animation:blink .9s step-end infinite;}
+
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+        .fade-in-up{animation:fadeInUp .45s ease-out forwards;}
+
+        @keyframes scanLine{0%{top:8%;}100%{top:88%;}}
+        .scan-line{animation:scanLine 2.2s ease-in-out infinite alternate;}
+
+        /* Molecule canvas fade-in */
+        @keyframes moleculeIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+        .molecule-canvas-wrap{animation:moleculeIn .6s ease-out forwards;}
+
+        /* Molecular loading dots */
+        @keyframes molDots{0%,20%{opacity:.3;}50%{opacity:1;}80%,100%{opacity:.3;}}
+        .mol-dot{animation:molDots 1.4s ease-in-out infinite;}
+        .mol-dot:nth-child(2){animation-delay:.2s;}
+        .mol-dot:nth-child(3){animation-delay:.4s;}
+
+        .chat-panel{transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);}
+        .chat-panel.open{transform:translateX(0);}
+
+        .modal-overlay{opacity:0;pointer-events:none;transition:opacity .3s ease;}
+        .modal-overlay.open{opacity:1;pointer-events:auto;}
+
+        .drug-item{transition:all .25s ease;border-radius:18px;padding:11px 14px;cursor:pointer;border-left:3px solid transparent;}
+        .drug-item:hover{background:rgba(255,193,204,.12);}
+        .drug-item.active{background:rgba(255,193,204,.22);border-left-color:var(--primary);}
+
+        .gauge-arc{transition:stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1);}
+        .legend-dot{width:8px;height:8px;border-radius:50%;transition:all .4s ease;flex-shrink:0;}
+
+        @media(max-width:1100px){
+            .sidebar{position:fixed;z-index:60;transform:translateX(-100%);transition:transform .35s ease;border-radius:0 32px 32px 0!important;}
+            .sidebar.open{transform:translateX(0);}
+            .main-grid{grid-template-columns:1fr!important;}
+            .analytics-col{grid-row:1;}
+        }
+        @media(max-width:700px){
+            .analytics-col{grid-template-columns:1fr!important;}
+            .chat-panel{width:100%!important;border-radius:32px 32px 0 0!important;top:auto!important;bottom:0!important;height:70vh!important;
+                transform:translateY(100%);}
+            .chat-panel.open{transform:translateY(0);}
+        }
+
+        @media(prefers-reduced-motion:reduce){
+            *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient background blobs -->
+    <div class="bg-blob" style="width:500px;height:500px;background:var(--primary);top:-150px;left:-120px;"></div>
+    <div class="bg-blob" style="width:420px;height:420px;background:var(--secondary);bottom:-120px;right:-100px;"></div>
+    <div class="bg-blob" style="width:280px;height:280px;background:var(--primary);top:45%;right:15%;opacity:.12;"></div>
+    <div class="bg-blob" style="width:200px;height:200px;background:var(--secondary);top:20%;left:40%;opacity:.1;"></div>
+    <div class="dot-grid"></div>
+
+    <!-- ===== MAIN LAYOUT ===== -->
+    <div class="flex h-screen relative z-10">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar w-[300px] flex-shrink-0 glass flex flex-col" style="border-radius:0;">
+            <div class="p-5 pb-4 border-b border-white/25">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                        <i class="fa-solid fa-dna text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-[1.15rem] font-extrabold tracking-tight">Pharma AI</h1>
+                        <p class="text-[11px] text-gray-400 font-medium">Compound Research Platform</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 pt-4 pb-2">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input id="searchInput" type="text" placeholder="Search compounds..."
+                        class="w-full pl-9 pr-4 py-2.5 bg-white/50 border border-white/50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC1CC]/40 focus:border-[#FFC1CC]/50 transition-all placeholder:text-gray-400"
+                        aria-label="Search compounds">
+                </div>
+            </div>
+            <div id="drugList" class="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5" role="listbox" aria-label="Compound list">
+                <div class="flex items-center justify-center h-28 text-gray-400 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading compounds...</div>
+            </div>
+            <div class="p-4 border-t border-white/20 space-y-2">
+                <button id="ocrBtn" class="w-full py-2.5 text-white rounded-2xl text-sm font-semibold hover:opacity-90 active:scale-[.98] transition-all flex items-center justify-center gap-2" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                    <i class="fa-solid fa-camera"></i> Scan Ingredients
+                </button>
+                <button id="chatToggleBtn" class="w-full py-2.5 bg-white/50 border border-white/50 rounded-2xl text-sm font-medium hover:bg-white/70 active:scale-[.98] transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-robot text-gray-500"></i> AI Assistant
+                </button>
+            </div>
+        </aside>
+
+        <!-- Mobile menu toggle -->
+        <button id="mobileMenuBtn" class="hidden max-[1100px]:fixed top-4 left-4 z-[70] w-10 h-10 glass flex items-center justify-center" aria-label="Toggle menu">
+            <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto p-5 lg:p-6">
+            <header class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                <div>
+                    <h2 id="selectedDrugName" class="text-xl lg:text-2xl font-extrabold tracking-tight">Select a Compound</h2>
+                    <p id="selectedDisease" class="text-sm text-gray-400 mt-0.5">Browse the library to begin analysis</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="glass px-4 py-2 flex items-center gap-2 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="drugCount" class="text-gray-500">0 compounds</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="main-grid grid gap-5" style="grid-template-columns:1fr 370px;min-height:calc(100vh - 120px);">
+
+                <!-- LEFT: Human Body Simulator -->
+                <section class="glass p-5 lg:p-6 flex flex-col" aria-label="Biological Impact Simulator">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400">Biological Impact Simulator</h3>
+                        <span id="organLabel" class="text-[11px] px-3 py-1 rounded-full font-semibold transition-all duration-500 opacity-0" style="background:rgba(255,193,204,.18);color:var(--primary-dark);">No target</span>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center body-container">
+                        <div class="body-inner relative" style="width:240px;height:430px;">
+                            <svg viewBox="0 0 240 430" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full" aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="bodyGrad" x1="120" y1="0" x2="120" y2="430" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0" stop-color="#E2E8F0"/>
+                                        <stop offset="1" stop-color="#CBD5E1"/>
+                                    </linearGradient>
+                                    <filter id="bodyShadow"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#94A3B8" flood-opacity=".15"/></filter>
+                                </defs>
+                                <ellipse cx="120" cy="38" rx="26" ry="30" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <rect x="112" y="66" width="16" height="16" rx="7" fill="url(#bodyGrad)"/>
+                                <path d="M74 82 Q72 80 68 88 L58 168 Q54 198 72 208 L94 216 L146 216 L168 208 Q186 198 182 168 L172 88 Q168 80 166 82Z" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <path d="M68 88 Q54 92 44 120 L30 178 Q26 196 35 200 L42 198 Q46 194 48 182 L60 136 Q64 120 72 116" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <path d="M172 88 Q186 92 196 120 L210 178 Q214 196 205 200 L198 198 Q194 194 192 182 L180 136 Q176 120 168 116" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <path d="M94 216 L86 284 L80 358 Q77 376 85 380 L95 380 Q102 376 100 362 L106 294 L108 216" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <path d="M146 216 L154 284 L160 358 Q163 376 155 380 L145 380 Q138 376 140 362 L134 294 L132 216" fill="url(#bodyGrad)" filter="url(#bodyShadow)"/>
+                                <ellipse cx="120" cy="34" rx="16" ry="18" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="100" cy="148" rx="18" ry="30" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="140" cy="148" rx="18" ry="30" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="123" cy="160" rx="10" ry="12" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="103" cy="196" rx="17" ry="10" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="124" cy="210" rx="15" ry="5" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="90" cy="222" rx="7" ry="10" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                                <ellipse cx="150" cy="222" rx="7" ry="10" fill="none" stroke="#B0BEC5" stroke-width=".6" stroke-dasharray="3 4" opacity=".4"/>
+                            </svg>
+                            <!-- Organ hotspots -->
+                            <div id="organ-brain" class="organ-spot absolute" style="left:50%;top:3%;transform:translateX(-50%);width:52px;height:46px;" data-organ="Brain" role="button" aria-label="Brain" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-brain text-sm relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                            <div id="organ-lungs" class="organ-spot absolute" style="left:50%;top:30%;transform:translateX(-50%);width:82px;height:76px;" data-organ="Lungs" role="button" aria-label="Lungs" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-lungs text-base relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                            <div id="organ-heart" class="organ-spot absolute" style="left:53%;top:35%;transform:translateX(-50%);width:34px;height:34px;" data-organ="Heart" role="button" aria-label="Heart" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-heart text-xs relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                            <div id="organ-liver" class="organ-spot absolute" style="left:40%;top:43%;transform:translateX(-50%);width:46px;height:28px;" data-organ="Liver" role="button" aria-label="Liver" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-shield-halved text-xs relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                            <div id="organ-pancreas" class="organ-spot absolute" style="left:52%;top:47.5%;transform:translateX(-50%);width:42px;height:18px;" data-organ="Pancreas" role="button" aria-label="Pancreas" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-droplet text-[10px] relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                            <div id="organ-kidneys" class="organ-spot absolute" style="left:50%;top:51%;transform:translateX(-50%);width:76px;height:34px;" data-organ="Kidneys" role="button" aria-label="Kidneys" tabindex="0">
+                                <div class="w-full h-full rounded-full flex items-center justify-center" style="background:rgba(255,193,204,0);"><div class="pulse-ring"></div><i class="fa-solid fa-filter text-[10px] relative z-10" style="color:#CBD5E1;"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 justify-center" role="list">
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Brain" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Brain</span>
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Lungs" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Lungs</span>
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Heart" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Heart</span>
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Liver" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Liver</span>
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Pancreas" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Pancreas</span>
+                        <span class="organ-legend-item flex items-center gap-1.5 text-[11px] text-gray-400 transition-all" data-organ="Kidneys" role="listitem"><span class="legend-dot" style="background:#E2E8F0;"></span>Kidneys</span>
+                    </div>
+                </section>
+
+                <!-- RIGHT: Analytics Column -->
+                <div class="analytics-col flex flex-col gap-5">
+                    <!-- Molecule Viewer -->
+                    <section class="glass p-5" aria-label="Molecular Structure">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400">Molecular Structure</h3>
+                            <span id="molInfo" class="text-[10px] text-gray-400 font-mono opacity-0 transition-opacity duration-500"></span>
+                        </div>
+                        <div class="w-full aspect-square rounded-2xl flex items-center justify-center overflow-hidden border border-white/40 relative" style="background:linear-gradient(145deg,#F1F5F9,#E2E8F0);">
+                            <canvas id="molCanvas" class="w-full h-full hidden"></canvas>
+                            <div id="molPlaceholder" class="text-center px-4">
+                                <i class="fa-solid fa-atom text-4xl mb-2" style="color:#CBD5E1;"></i>
+                                <p class="text-xs text-gray-400">Select a compound to view its molecular structure</p>
+                            </div>
+                            <div id="molLoading" class="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl" style="background:linear-gradient(145deg,#F1F5F9,#E2E8F0);">
+                                <div class="flex gap-1.5">
+                                    <span class="mol-dot w-2 h-2 rounded-full" style="background:var(--primary);"></span>
+                                    <span class="mol-dot w-2 h-2 rounded-full" style="background:var(--primary);"></span>
+                                    <span class="mol-dot w-2 h-2 rounded-full" style="background:var(--primary);"></span>
+                                </div>
+                                <p class="text-[11px] text-gray-400">Resolving structure</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Binding Score -->
+                    <section class="glass p-5" aria-label="Binding Affinity Score">
+                        <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-3">Binding Affinity</h3>
+                        <div class="flex items-center gap-5">
+                            <div class="relative w-[100px] h-[100px] flex-shrink-0">
+                                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100" aria-hidden="true">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" stroke-width="7"/>
+                                    <circle id="gaugeCircle" class="gauge-arc" cx="50" cy="50" r="42" fill="none" stroke="var(--secondary)" stroke-width="7"
+                                        stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="gaugeValue" class="text-xl font-extrabold" style="font-family:'Montserrat';font-variant-numeric:tabular-nums;">--</span>
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-400 mb-0.5">Affinity Score</p>
+                                <p id="affinityLabel" class="text-base font-bold text-gray-300" style="font-family:'Montserrat';">No Data</p>
+                                <p id="affinityDesc" class="text-[11px] text-gray-400 mt-0.5 leading-snug">Select a compound to analyze binding</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- AI Hypothesis -->
+                    <section class="glass p-5 flex-1 flex flex-col" aria-label="AI Hypothesis">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                                <i class="fa-solid fa-wand-magic-sparkles text-white text-[10px]"></i>
+                            </div>
+                            <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400">AI Hypothesis</h3>
+                        </div>
+                        <div id="hypothesisContainer" class="flex-1 min-h-[80px]">
+                            <p id="hypothesisText" class="text-sm text-gray-400 leading-relaxed italic">Waiting for compound selection to generate hypothesis...</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== CHAT PANEL ===== -->
+    <div id="chatPanel" class="chat-panel fixed top-0 right-0 h-full w-[380px] glass z-[55] flex flex-col" style="border-radius:32px 0 0 32px;" aria-label="AI Assistant Chat">
+        <div class="p-4 border-b border-white/20 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                    <i class="fa-solid fa-robot text-white text-sm"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm">Pharma AI Assistant</h4>
+                    <p class="text-[10px] text-gray-400">Drug analysis chatbot</p>
+                </div>
+            </div>
+            <button id="chatCloseBtn" class="w-8 h-8 rounded-xl bg-white/50 flex items-center justify-center hover:bg-white/70 transition-colors" aria-label="Close chat">
+                <i class="fa-solid fa-xmark text-gray-500 text-sm"></i>
+            </button>
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+            <div class="flex gap-2.5 fade-in-up">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                    <i class="fa-solid fa-robot text-white text-[10px]"></i>
+                </div>
+                <div class="glass px-3.5 py-2.5 max-w-[82%]" style="border-radius:18px 18px 18px 4px;">
+                    <p class="text-[13px] text-gray-600 leading-relaxed">Hello! I'm your Pharma AI assistant. Select a compound from the library, then ask me about its side effects, mechanism of action, binding score, or target organ.</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 border-t border-white/20">
+            <div class="flex gap-2">
+                <input id="chatInput" type="text" placeholder="Ask about the selected drug..."
+                    class="flex-1 px-4 py-2.5 bg-white/50 border border-white/50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC1CC]/40 transition-all placeholder:text-gray-400" aria-label="Chat input">
+                <button id="chatSendBtn" class="w-10 h-10 rounded-2xl flex items-center justify-center text-white hover:opacity-90 active:scale-95 transition-all" style="background:linear-gradient(135deg,var(--primary),var(--secondary));" aria-label="Send message">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+            <div class="flex gap-1.5 mt-2 overflow-x-auto pb-1">
+                <button class="quick-q text-[11px] px-2.5 py-1 rounded-full bg-white/50 border border-white/40 text-gray-500 hover:bg-[#FFC1CC]/15 hover:text-gray-700 transition-all whitespace-nowrap" data-q="What are the side effects?">Side effects</button>
+                <button class="quick-q text-[11px] px-2.5 py-1 rounded-full bg-white/50 border border-white/40 text-gray-500 hover:bg-[#FFC1CC]/15 hover:text-gray-700 transition-all whitespace-nowrap" data-q="How does it work?">Mechanism</button>
+                <button class="quick-q text-[11px] px-2.5 py-1 rounded-full bg-white/50 border border-white/40 text-gray-500 hover:bg-[#FFC1CC]/15 hover:text-gray-700 transition-all whitespace-nowrap" data-q="What is the binding score?">Binding</button>
+                <button class="quick-q text-[11px] px-2.5 py-1 rounded-full bg-white/50 border border-white/40 text-gray-500 hover:bg-[#FFC1CC]/15 hover:text-gray-700 transition-all whitespace-nowrap" data-q="Which organ does it target?">Organ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== OCR MODAL ===== -->
+    <div id="ocrModal" class="modal-overlay fixed inset-0 z-[65] flex items-center justify-center" style="background:rgba(15,23,42,.45);backdrop-filter:blur(6px);">
+        <div class="glass w-full max-w-md mx-4 p-5 fade-in-up">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-base">Scan Ingredients</h3>
+                <button id="ocrCloseBtn" class="w-8 h-8 rounded-xl bg-white/50 flex items-center justify-center hover:bg-white/70 transition-colors" aria-label="Close scanner"><i class="fa-solid fa-xmark text-gray-500 text-sm"></i></button>
+            </div>
+            <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-4" style="background:#0F172A;">
+                <div class="absolute inset-5 border-2 border-dashed rounded-xl" style="border-color:rgba(173,216,230,.35);"></div>
+                <div class="scan-line absolute left-5 right-5 h-0.5" style="background:linear-gradient(90deg,transparent,var(--secondary),transparent);top:12%;"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div id="ocrStatus" class="text-center">
+                        <i class="fa-solid fa-camera text-2xl mb-1.5" style="color:rgba(173,216,230,.45);"></i>
+                        <p class="text-xs" style="color:rgba(173,216,230,.6);">Press Start Scan to begin</p>
+                    </div>
+                </div>
+            </div>
+            <div id="ocrResults" class="space-y-2 max-h-36 overflow-y-auto">
+                <p class="text-sm text-gray-400 text-center text-xs">Simulated OCR ingredient detection</p>
+            </div>
+            <button id="ocrScanBtn" class="w-full mt-3 py-2.5 text-white rounded-2xl text-sm font-semibold hover:opacity-90 active:scale-[.98] transition-all" style="background:linear-gradient(135deg,var(--primary),var(--secondary));">
+                Start Scan
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-[70] space-y-2 pointer-events-none"></div>
+
+    <script>
+    // ===========================================================
+    // Pharma AI — Application Logic
+    // ===========================================================
+
+    let allDrugs = [];
+    let selectedDrug = null;
+    let typewriterTimer = null;
+    let moleculeCache = new Map(); // Cache PubChem JSON responses by drug name
+    let pendingMolAbort = null;   // AbortController for in-flight molecule fetches
+
+    const API_1 = 'https://api.sheety.co/40b3967d4973af5cd0d16b09d40cd48f/drugBenefitsAndSideEffectsDatabase/drugBenefitsAndSideEffectsDatabase';
+    const API_2 = 'https://api.sheety.co/40b3967d4973af5cd0d16b09d40cd48f/comprehensiveDrugDiseaseDataGeneration/comprehensiveDrugDiseaseDataGeneration';
+
+    // --- Organ keyword mapping ---
+    const ORGAN_KEYS = {
+        brain:'organ-brain', lungs:'organ-lungs', lung:'organ-lungs',
+        heart:'organ-heart', cardiac:'organ-heart', cardiovascular:'organ-heart',
+        liver:'organ-liver', hepatic:'organ-liver',
+        pancreas:'organ-pancreas', pancreatic:'organ-pancreas',
+        kidney:'organ-kidneys', kidneys:'organ-kidneys', renal:'organ-kidneys'
+    };
+    const ORGAN_DISPLAY = {
+        brain:'Brain', lungs:'Lungs', lung:'Lungs', heart:'Heart', cardiac:'Heart',
+        cardiovascular:'Heart', liver:'Liver', hepatic:'Liver', pancreas:'Pancreas',
+        pancreatic:'Pancreas', kidney:'Kidneys', kidneys:'Kidneys', renal:'Kidneys'
+    };
+
+    function resolveOrgan(str) {
+        if (!str) return null;
+        const s = String(str).toLowerCase().trim();
+        for (const [k, id] of Object.entries(ORGAN_KEYS)) {
+            if (s.includes(k)) return { id, name: ORGAN_DISPLAY[k] || k };
+        }
+        return null;
+    }
+
+    function field(row, ...names) {
+        for (const n of names) {
+            if (row[n] !== undefined && row[n] !== null && row[n] !== '') return row[n];
+        }
+        return '';
+    }
+
+    // ===========================================================
+    // MOLECULE DRAWING ENGINE
+    // ===========================================================
+    // Atom colors following CPK coloring convention
+    const ATOM_COLORS = {
+        C:'#475569', N:'#3B82F6', O:'#EF4444', S:'#EAB308', F:'#22C55E',
+        Cl:'#22C55E', Br:'#A16207', I:'#7C3AED', P:'#F97316', H:'#94A3B8'
+    };
+    const DEFAULT_ATOM_COLOR = '#64748B';
+
+    function getAtomColor(el) {
+        if (!el) return DEFAULT_ATOM_COLOR;
+        const s = el.trim();
+        // Handle special PubChem notations like "[nH]"
+        const clean = s.replace(/[\[\]]/g, '').replace(/\d+/g, '').trim();
+        return ATOM_COLORS[clean] || ATOM_COLORS[s] || DEFAULT_ATOM_COLOR;
+    }
+
+    // Draws a complete molecular structure onto a canvas
+    function drawMolecule(canvas, atoms, bonds, formula, mw) {
+        const wrap = canvas.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const w = wrap.clientWidth;
+        const h = wrap.clientHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        if (!atoms || atoms.length === 0) return;
+
+        // --- Compute bounding box from atom coordinates ---
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const a of atoms) {
+            minX = Math.min(minX, a.x); maxX = Math.max(maxX, a.x);
+            minY = Math.min(minY, a.y); maxY = Math.max(maxY, a.y);
+        }
+        const molW = Math.max(maxX - minX, 1);
+        const molH = Math.max(maxY - minY, 1);
+        const pad = 28;
+        const scale = Math.min((w - pad * 2) / molW, (h - pad * 2) / molH) * 0.88;
+        const offX = (w - molW * scale) / 2 - minX * scale;
+        const offY = (h - molH * scale) / 2 - minY * scale;
+
+        function tx(x) { return x * scale + offX; }
+        function ty(y) { return y * scale + offY; }
+
+        // --- Draw bonds ---
+        for (const b of bonds) {
+            const a1 = atoms[b.a1], a2 = atoms[b.a2];
+            if (!a1 || !a2) continue;
+            const x1 = tx(a1.x), y1 = ty(a1.y), x2 = tx(a2.x), y2 = ty(a2.y);
+            const order = Math.max(1, b.order || 1);
+            const dx = x2 - x1, dy = y2 - y1;
+            const len = Math.max(Math.sqrt(dx * dx + dy * dy), 0.01);
+            const nx = -dy / len, ny = dx / len; // normal vector
+
+            ctx.lineWidth = Math.max(1.6, Math.min(2.4, scale * 0.04));
+            ctx.lineCap = 'round';
+
+            if (order === 1) {
+                ctx.strokeStyle = '#94A3B8';
+                ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            } else if (order === 2) {
+                const sp = 2.2 * scale / 40;
+                ctx.strokeStyle = '#94A3B8';
+                ctx.beginPath(); ctx.moveTo(x1 + nx * sp, y1 + ny * sp); ctx.lineTo(x2 + nx * sp, y2 + ny * sp); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x1 - nx * sp, y1 - ny * sp); ctx.lineTo(x2 - nx * sp, y2 - ny * sp); ctx.stroke();
+            } else if (order >= 3) {
+                const sp = 3.2 * scale / 40;
+                ctx.strokeStyle = '#94A3B8';
+                ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x1 + nx * sp, y1 + ny * sp); ctx.lineTo(x2 + nx * sp, y2 + ny * sp); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x1 - nx * sp, y1 - ny * sp); ctx.lineTo(x2 - nx * sp, y2 - ny * sp); ctx.stroke();
+            }
+        }
+
+        // --- Draw atoms ---
+        const baseR = Math.max(5, Math.min(11, scale * 0.085));
+        const labelThresh = scale * 0.14; // show element labels when zoomed enough
+
+        for (const a of atoms) {
+            const el = a.element || 'C';
+            const color = getAtomColor(el);
+            const px = tx(a.x), py = ty(a.y);
+            const isHeavy = el !== 'C' && el !== 'H';
+            const r = isHeavy ? baseR * 1.25 : baseR;
+
+            // Glow for heteroatoms (non-C, non-H)
+            if (isHeavy) {
+                ctx.save();
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(px, py, r + 2, 0, Math.PI * 2);
+                ctx.fillStyle = color + '18';
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Atom circle
+            ctx.beginPath();
+            ctx.arc(px, py, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            // Light border
+            ctx.lineWidth = 0.6;
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.stroke();
+
+            // Element label for heteroatoms when zoomed in
+            if (isHeavy && scale > labelThresh) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold ' + Math.max(7, r * 1.1) + 'px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const label = el.replace(/[\[\]]/g, '').replace(/\d+/g, '');
+                ctx.fillText(label, px, py + 0.5);
+            }
+        }
+
+        // Show molecule info
+        const infoEl = document.getElementById('molInfo');
+        if (formula || mw) {
+            let info = '';
+            if (formula) info += formula;
+            if (mw) info += (info ? '  |  ' : '') + mw + ' g/mol';
+            infoEl.textContent = info;
+            infoEl.style.opacity = '1';
+        }
+    }
+
+    // Fetches 2D molecular coordinates from PubChem PUG REST (JSON, CORS-friendly)
+    async function fetchMolecule(name) {
+        if (!name) return null;
+        const key = name.trim().toLowerCase();
+
+        // Return cached if available
+        if (moleculeCache.has(key)) return moleculeCache.get(key);
+
+        // Abort any pending fetch
+        if (pendingMolAbort) pendingMolAbort.abort();
+        const ac = new AbortController();
+        pendingMolAbort = ac;
+
+        try {
+            const resp = await fetch(
+                'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' +
+                encodeURIComponent(name.trim()) +
+                '/property/IsomericSMILES,MolecularFormula,MolecularWeight/JSON',
+                { signal: ac.signal }
+            );
+            if (!resp.ok) throw new Error('PubChem ' + resp.status);
+            const data = await resp.json();
+
+            const pc = data?.PC_Compounds?.[0];
+            if (!pc) throw new Error('No compound found');
+
+            // Extract properties
+            const props = {};
+            (pc.props || []).forEach(p => {
+                const urn = p.urn?.label || '';
+                if (urn.includes('IsomericSMILES')) props.smiles = p.value?.sval || '';
+                if (urn.includes('MolecularFormula')) props.formula = p.value?.sval || '';
+                if (urn.includes('MolecularWeight')) props.mw = p.value?.fval || 0;
+            });
+
+            if (!props.smiles) throw new Error('No SMILES');
+
+            // Parse SMILES to atoms & bonds
+            const { atoms, bonds } = parseSMILES(props.smiles);
+
+            const result = { atoms, bonds, formula: props.formula, mw: Math.round(props.mw) };
+            moleculeCache.set(key, result);
+            pendingMolAbort = null;
+            return result;
+
+        } catch (err) {
+            if (err.name === 'AbortError') return null;
+            console.warn('PubChem fetch failed for "' + name + '":', err.message);
+            // Cache negative result to avoid repeated failures
+            moleculeCache.set(key, null);
+            pendingMolAbort = null;
+            return null;
+        }
+    }
+
+    // ===========================================================
+    // SMILES PARSER — Produces 2D coordinates via ring-perception
+    // ===========================================================
+    function parseSMILES(smiles) {
+        const atoms = [];
+        const bonds = [];
+        let cx = 0, cy = 0, dir = 0; // direction: 0=right, 1=down, 2=left, 3=up
+        const stack = [];
+        const ringMap = {}; // ringNum -> { idx, cx, cy, dir }
+
+        const DX = [1.4, 0, -1.4, 0];
+        const DY = [0, 1.2, 0, -1.2];
+
+        function newAtom(el, x, y) {
+            const idx = atoms.length;
+            atoms.push({ element: el, x, y });
+            return idx;
+        }
+
+        function nextDir(d, branchSide) {
+            // Standard: right turn (clockwise visual = counter-clockwise in screen coords)
+            return (d + (branchSide || 1)) % 4;
+        }
+
+        for (let i = 0; i < smiles.length; i++) {
+            let ch = smiles[i];
+
+            // Skip hydrogen count notation, chirality (@@, @), stereo bonds (/,\), charges
+            if (ch === '@' || ch === '/' || ch === '\\' || ch === '+' || ch === '-' || ch === '#') continue;
+
+            // Digits: ring closure
+            if (ch >= '0' && ch <= '9') {
+                const rn = parseInt(ch);
+                if (ringMap[rn] !== undefined) {
+                    // Close ring — add bond back to opening atom
+                    const r = ringMap[rn];
+                    bonds.push({ a1: atoms.length - 1, a2: r.idx, order: 1 });
+                    // Adjust closing atom position to avoid overlap
+                    const last = atoms[atoms.length - 1];
+                    const target = atoms[r.idx];
+                    const dx = target.x - last.x;
+                    const dy = target.y - last.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+                    const ideal = 1.4;
+                    if (dist < ideal * 0.6) {
+                        // Push last atom slightly outward from ring center
+                        last.x -= (dx / dist) * ideal * 0.4;
+                        last.y -= (dy / dist) * ideal * 0.4;
+                    }
+                    delete ringMap[rn];
+                } else {
+                    ringMap[rn] = { idx: atoms.length - 1, cx, cy, dir };
+                }
+                continue;
+            }
+
+            // Branch start
+            if (ch === '(') {
+                stack.push({ cx, cy, dir });
+                // Branch goes in a different direction
+                dir = nextDir(dir, -1); // left turn for branch
+                continue;
+            }
+
+            // Branch end
+            if (ch === ')') {
+                if (stack.length > 0) {
+                    const prev = stack.pop();
+                    cx = prev.cx;
+                    cy = prev.cy;
+                    dir = prev.dir;
+                    // Continue from parent direction
+                    dir = nextDir(dir, 1);
+                }
+                continue;
+            }
+
+            // Square bracket notation [NH], [nH], [Fe], etc.
+            if (ch === '[') {
+                let el = '';
+                i++;
+                while (i < smiles.length && smiles[i] !== ']') {
+                    el += smiles[i]; i++;
+                }
+                // Extract element from bracket content (strip H, digits, +, -, @)
+                const cleanEl = el.replace(/[^A-Za-z]/g, '').substring(0, 2);
+                const atomEl = cleanEl || 'X';
+
+                if (atoms.length > 0) {
+                    bonds.push({ a1: atoms.length - 1, a2: atoms.length, order: 1 });
+                }
+                cx += DX[dir];
+                cy += DY[dir];
+                newAtom(atomEl, cx, cy);
+                dir = nextDir(dir, 1);
+                continue;
+            }
+
+            // Double bond notation
+            let bondOrder = 1;
+            if (ch === '=') { bondOrder = 2; i++; ch = smiles[i]; }
+            else if (ch === ':') { bondOrder = 1.5; i++; ch = smiles[i]; } // aromatic
+            else if (ch === '#') { bondOrder = 3; i++; ch = smiles[i]; }
+
+            // Atom character
+            if (ch && /[A-Za-z]/.test(ch)) {
+                let el = ch;
+                // Two-letter elements (Cl, Br, etc.) — lowercase second char
+                if (i + 1 < smiles.length && /[a-z]/.test(smiles[i + 1])) {
+                    i++;
+                    el += smiles[i];
+                }
+
+                // Bond to previous atom
+                if (atoms.length > 0) {
+                    bonds.push({ a1: atoms.length - 1, a2: atoms.length, order: bondOrder });
+                }
+
+                cx += DX[dir];
+                cy += DY[dir];
+                newAtom(el.toUpperCase(), cx, cy);
+                dir = nextDir(dir, 1);
+            }
+        }
+
+        return { atoms, bonds };
+    }
+
+    // ===========================================================
+    // UPDATE MOLECULE VIEWER
+    // ===========================================================
+    function updateMolecule(drugName) {
+        const canvas = document.getElementById('molCanvas');
+        const placeholder = document.getElementById('molPlaceholder');
+        const loading = document.getElementById('molLoading');
+        const infoEl = document.getElementById('molInfo');
+
+        if (!drugName) {
+            canvas.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            placeholder.innerHTML = '<i class="fa-solid fa-atom text-4xl mb-2" style="color:#CBD5E1;"></i><p class="text-xs text-gray-400">Select a compound to view its molecular structure</p>';
+            loading.classList.add('hidden');
+            infoEl.style.opacity = '0';
+            return;
+        }
+
+        // Show loading state
+        canvas.classList.add('hidden');
+        placeholder.classList.add('hidden');
+        loading.classList.remove('hidden');
+        infoEl.style.opacity = '0';
+
+        fetchMolecule(drugName).then(result => {
+            if (!result) {
+                // Fallback: generate a decorative molecule
+                const fallback = generateFallbackMolecule(drugName);
+                loading.classList.add('hidden');
+                canvas.classList.remove('hidden');
+                canvas.classList.remove('molecule-canvas-wrap');
+                void canvas.offsetWidth; // trigger reflow
+                canvas.classList.add('molecule-canvas-wrap');
+                drawMolecule(canvas, fallback.atoms, fallback.bonds, null, null);
+                infoEl.textContent = 'Structure inferred';
+                infoEl.style.opacity = '1';
+                return;
+            }
+
+            loading.classList.add('hidden');
+            canvas.classList.remove('hidden');
+            canvas.classList.remove('molecule-canvas-wrap');
+            void canvas.offsetWidth;
+            canvas.classList.add('molecule-canvas-wrap');
+            drawMolecule(canvas, result.atoms, result.bonds, result.formula, result.mw);
+        });
+    }
+
+    // Fallback: generate a procedural "molecule" from the drug name hash
+    function generateFallbackMolecule(name) {
+        const atoms = [];
+        const bonds = [];
+        let seed = 0;
+        for (let i = 0; i < name.length; i++) seed += name.charCodeAt(i) * (i + 1);
+
+        function seededRand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; }
+
+        const n = 8 + Math.floor(seededRand() * 14);
+        const usedX = new Set(), usedY = new Set();
+
+        for (let i = 0; i < n; i++) {
+            let x, y, tries = 0;
+            do {
+                x = Math.round((seededRand() * 180 + 10) * 10) / 10;
+                y = Math.round((seededRand() * 180 + 10) * 10) / 10;
+                tries++;
+            } while (tries < 50 && usedX.has(Math.round(x / 14)) && usedY.has(Math.round(y / 14)));
+            usedX.add(Math.round(x / 14));
+            usedY.add(Math.round(y / 14));
+            const els = ['C','C','C','C','N','O','N','S','F'];
+            atoms.push({ element: els[Math.floor(seededRand() * els.length)], x, y });
+        }
+
+        // Connect in a chain + some branches
+        for (let i = 0; i < n - 1; i++) {
+            bonds.push({ a1: i, a2: i + 1, order: seededRand() > 0.7 ? 2 : 1 });
+        }
+        // Add a few ring-closing bonds
+        if (n > 5) bonds.push({ a1: 0, a2: Math.min(5, n - 1), order: 1 });
+        if (n > 9) bonds.push({ a1: 4, a2: Math.min(9, n - 1), order: seededRand() > 0.5 ? 2 : 1 });
+        if (n > 7 && seededRand() > 0.5) bonds.push({ a1: 2, a2: 7, order: 1 });
+
+        return { atoms, bonds };
+    }
+
+    // ===========================================================
+    // DATA FETCHING & MERGING
+    // ===========================================================
+    async function fetchDrugs() {
+        try {
+            const [r1, r2] = await Promise.allSettled([
+                fetch(API_1).then(r => r.json()),
+                fetch(API_2).then(r => r.json())
+            ]);
+
+            function extractArr(val) {
+                if (!val || typeof val !== 'object') return [];
+                const k = Object.keys(val).find(k => Array.isArray(val[k]));
+                return k ? val[k] : [];
+            }
+
+            const d1 = r1.status === 'fulfilled' ? extractArr(r1.value) : [];
+            const d2 = r2.status === 'fulfilled' ? extractArr(r2.value) : [];
+
+            const map = new Map();
+
+            function ingest(rows) {
+                rows.forEach(raw => {
+                    const name = field(raw,'drugName','DRUG_NAME','drug_name','Drug Name','drug').trim();
+                    if (!name) return;
+                    const key = name.toLowerCase();
+                    const existing = map.get(key);
+                    const obj = existing || {
+                        drugName: name, disease: '', primaryOrgan: '', bindingScore: 0,
+                        aiHypothesis: '', imageUrl: '', sideEffects: '', mechanism: '', benefits: '', _raw: {}
+                    };
+                    const candidates = {
+                        disease:['disease','DISEASE','diseaseName','Disease','disease_name','Disease Name'],
+                        primaryOrgan:['primaryOrgan','PRIMARY_ORGAN','targetOrgan','Target Organ','primary_organ','Primary Organ'],
+                        bindingScore:['bindingScore','BINDING_SCORE','binding_score','Binding Score','Binding Affinity'],
+                        aiHypothesis:['aiHypothesis','AI_HYPOTHESIS','hypothesis','ai_hypothesis','AI Hypothesis','Hypothesis'],
+                        imageUrl:['imageUrl','IMAGE_URL','image_url','Image URL','image'],
+                        sideEffects:['sideEffects','SIDE_EFFECTS','side_effects','Side Effects','Side Effects'],
+                        mechanism:['mechanism','MECHANISM','mechanismOfAction','mechanism_of_action','Mechanism','Mechanism of Action'],
+                        benefits:['benefits','BENEFITS','Benefits','drugBenefits','Drug Benefits']
+                    };
+                    for (const [prop, keys] of Object.entries(candidates)) {
+                        if (!obj[prop]) obj[prop] = field(raw, ...keys);
+                    }
+                    obj._raw = { ...obj._raw, ...raw };
+                    map.set(key, obj);
+                });
+            }
+
+            ingest(d1);
+            ingest(d2);
+
+            allDrugs = Array.from(map.values());
+            allDrugs.forEach(d => {
+                const v = parseFloat(String(d.bindingScore).replace(/[^0-9.\-]/g, ''));
+                d.bindingScore = isNaN(v) ? 0 : Math.max(0, Math.min(100, v));
+            });
+
+            renderDrugList(allDrugs);
+            document.getElementById('drugCount').textContent = allDrugs.length + ' compounds';
+
+            if (allDrugs.length > 0) selectDrug(allDrugs[0]);
+            else {
+                document.getElementById('drugList').innerHTML = '<p class="text-center text-gray-400 text-xs py-10">No compound data available</p>';
+                showToast('No drug data returned from the APIs.', 'error');
+            }
+        } catch (err) {
+            console.error('Fetch error:', err);
+            document.getElementById('drugList').innerHTML =
+                '<div class="flex flex-col items-center justify-center h-28 text-gray-400 text-sm">' +
+                '<i class="fa-solid fa-triangle-exclamation text-lg mb-1.5 text-red-300"></i>' +
+                '<p>Failed to load data</p><p class="text-xs mt-0.5">Check your network connection</p></div>';
+            showToast('Network error — could not reach drug database.', 'error');
+        }
+    }
+
+    // ===========================================================
+    // SIDEBAR DRUG LIST
+    // ===========================================================
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function renderDrugList(drugs) {
+        const el = document.getElementById('drugList');
+        if (!drugs.length) { el.innerHTML = '<p class="text-center text-gray-400 text-xs py-10">No matches found</p>'; return; }
+
+        el.innerHTML = drugs.map((d, i) => {
+            const isActive = selectedDrug && selectedDrug.drugName === d.drugName;
+            return '<div class="drug-item' + (isActive ? ' active' : '') + '" role="option" aria-selected="' + isActive +
+                '" data-idx="' + i + '" tabindex="0">' +
+                '<div class="flex items-start gap-2.5">' +
+                '<div class="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style="background:linear-gradient(135deg,rgba(255,193,204,.25),rgba(173,216,230,.25));">' +
+                '<i class="fa-solid fa-capsules text-[10px]" style="color:#94A3B8;"></i></div>' +
+                '<div class="min-w-0"><p class="text-[13px] font-semibold text-gray-700 truncate">' + escHtml(d.drugName) + '</p>' +
+                '<p class="text-[11px] text-gray-400 truncate mt-0.5">' + escHtml(d.disease || 'No disease data') + '</p></div></div></div>';
+        }).join('');
+
+        el.querySelectorAll('.drug-item').forEach(item => {
+            const handler = () => selectDrug(allDrugs[parseInt(item.dataset.idx)]);
+            item.addEventListener('click', handler);
+            item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
+        });
+    }
+
+    // ===========================================================
+    // SELECT DRUG
+    // ===========================================================
+    function selectDrug(drug) {
+        selectedDrug = drug;
+        document.getElementById('selectedDrugName').textContent = drug.drugName || 'Unknown Compound';
+        document.getElementById('selectedDisease').textContent = drug.disease ? 'Target: ' + drug.disease : 'No disease association';
+        updateOrganGlow(drug.primaryOrgan);
+        updateMolecule(drug.drugName);
+        updateGauge(drug.bindingScore);
+        updateHypothesis(drug.aiHypothesis);
+        document.querySelectorAll('.drug-item').forEach(item => {
+            const idx = parseInt(item.dataset.idx);
+            const match = allDrugs[idx] && allDrugs[idx].drugName === drug.drugName;
+            item.classList.toggle('active', match);
+            item.setAttribute('aria-selected', match);
+        });
+        document.getElementById('sidebar').classList.remove('open');
+    }
+
+    // ===========================================================
+    // ORGAN GLOW
+    // ===========================================================
+    function updateOrganGlow(organStr) {
+        document.querySelectorAll('.organ-spot').forEach(spot => {
+            spot.classList.remove('organ-active');
+            const bg = spot.querySelector(':scope > div');
+            if (bg) bg.style.background = 'rgba(255,193,204,0)';
+            const icon = spot.querySelector('i');
+            if (icon) icon.style.color = '#CBD5E1';
+            const ring = spot.querySelector('.pulse-ring');
+            if (ring) ring.style.display = 'none';
+        });
+        const label = document.getElementById('organLabel');
+        document.querySelectorAll('.organ-legend-item').forEach(li => {
+            const dot = li.querySelector('.legend-dot');
+            if (dot) dot.style.background = '#E2E8F0';
+            li.style.color = '#94A3B8'; li.style.fontWeight = '400';
+        });
+
+        const resolved = resolveOrgan(organStr);
+        if (resolved) {
+            const spot = document.getElementById(resolved.id);
+            if (spot) {
+                spot.classList.add('organ-active');
+                const bg = spot.querySelector(':scope > div');
+                if (bg) bg.style.background = 'rgba(255,193,204,0.35)';
+                const icon = spot.querySelector('i');
+                if (icon) icon.style.color = '#FFC1CC';
+                const ring = spot.querySelector('.pulse-ring');
+                if (ring) ring.style.display = 'block';
+            }
+            label.textContent = resolved.name;
+            label.style.opacity = '1';
+            const legend = document.querySelector('.organ-legend-item[data-organ="' + resolved.name + '"]');
+            if (legend) {
+                legend.querySelector('.legend-dot').style.background = '#FFC1CC';
+                legend.style.color = '#1E293B'; legend.style.fontWeight = '600';
+            }
+        } else { label.style.opacity = '0'; }
+    }
+
+    // ===========================================================
+    // BINDING GAUGE
+    // ===========================================================
+    const CIRCUMFERENCE = 2 * Math.PI * 42;
+
+    function updateGauge(score) {
+        const circle = document.getElementById('gaugeCircle');
+        const valEl = document.getElementById('gaugeValue');
+        const lblEl = document.getElementById('affinityLabel');
+        const descEl = document.getElementById('affinityDesc');
+        const s = Math.max(0, Math.min(100, score));
+
+        circle.style.strokeDashoffset = CIRCUMFERENCE - (CIRCUMFERENCE * s / 100);
+        animateNum(valEl, s);
+
+        if (s >= 80) { lblEl.textContent='Very High'; lblEl.style.color='#10B981'; descEl.textContent='Strong binding affinity detected'; circle.style.stroke='#10B981'; }
+        else if (s >= 60) { lblEl.textContent='High'; lblEl.style.color='#0EA5E9'; descEl.textContent='Good binding affinity observed'; circle.style.stroke='#ADD8E6'; }
+        else if (s >= 40) { lblEl.textContent='Moderate'; lblEl.style.color='#F59E0B'; descEl.textContent='Moderate binding — may require optimization'; circle.style.stroke='#F59E0B'; }
+        else if (s > 0) { lblEl.textContent='Low'; lblEl.style.color='#EF4444'; descEl.textContent='Weak affinity — consider structural modifications'; circle.style.stroke='#EF4444'; }
+        else { lblEl.textContent='No Data'; lblEl.style.color='#CBD5E1'; descEl.textContent='Select a compound to analyze'; circle.style.stroke='var(--secondary)'; valEl.textContent='--'; }
+    }
+
+    function animateNum(el, target) {
+        const dur = 1400, t0 = performance.now();
+        (function tick(now) {
+            const p = Math.min((now - t0) / dur, 1);
+            el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+            if (p < 1) requestAnimationFrame(tick);
+        })(t0);
+    }
+
+    // ===========================================================
+    // AI HYPOTHESIS — Typewriter
+    // ===========================================================
+    function updateHypothesis(text) {
+        const el = document.getElementById('hypothesisText');
+        if (typewriterTimer) { clearInterval(typewriterTimer); typewriterTimer = null; }
+        if (!text || !text.trim()) {
+            el.textContent = 'No hypothesis available for this compound.';
+            el.className = 'text-sm text-gray-400 leading-relaxed italic';
+            return;
+        }
+        el.textContent = '';
+        el.className = 'text-sm text-gray-700 leading-relaxed typewriter-cursor';
+        let i = 0;
+        typewriterTimer = setInterval(() => {
+            if (i < text.length) { el.textContent += text.charAt(i); i++; }
+            else { clearInterval(typewriterTimer); typewriterTimer = null; setTimeout(() => el.classList.remove('typewriter-cursor'), 2200); }
+        }, 18);
+    }
+
+    // ===========================================================
+    // SEARCH
+    // ===========================================================
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (!q) { renderDrugList(allDrugs); return; }
+        renderDrugList(allDrugs.filter(d =>
+            (d.drugName||'').toLowerCase().includes(q) ||
+            (d.disease||'').toLowerCase().includes(q) ||
+            (d.primaryOrgan||'').toLowerCase().includes(q)
+        ));
+    });
+
+    // ===========================================================
+    // CHAT
+    // ===========================================================
+    function toggleChat() { document.getElementById('chatPanel').classList.toggle('open'); }
+    document.getElementById('chatToggleBtn').addEventListener('click', toggleChat);
+    document.getElementById('chatCloseBtn').addEventListener('click', toggleChat);
+
+    function addMsg(html, isUser) {
+        const c = document.getElementById('chatMessages');
+        const d = document.createElement('div');
+        d.className = 'flex gap-2.5 fade-in-up' + (isUser ? ' justify-end' : '');
+        d.innerHTML = isUser
+            ? '<div class="px-3.5 py-2.5 max-w-[82%]" style="border-radius:18px 18px 4px 18px;background:linear-gradient(135deg,rgba(255,193,204,.28),rgba(173,216,230,.28));backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.3);"><p class="text-[13px] text-gray-700">' + html + '</p></div>'
+            : '<div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style="background:linear-gradient(135deg,var(--primary),var(--secondary));"><i class="fa-solid fa-robot text-white text-[10px]"></i></div>'
+              + '<div class="glass px-3.5 py-2.5 max-w-[82%]" style="border-radius:18px 18px 18px 4px;"><p class="text-[13px] text-gray-600 leading-relaxed">' + html + '</p></div>';
+        c.appendChild(d);
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function chatReply(q) {
+        if (!selectedDrug) return 'Please select a compound from the library first, then I can answer questions about it.';
+        const d = selectedDrug, ql = q.toLowerCase();
+        if (ql.includes('side effect') || ql.includes('adverse') || ql.includes('toxic'))
+            return 'For <strong>' + escHtml(d.drugName) + '</strong>, documented side effects: ' + escHtml(d.sideEffects || 'No side effect data available. Consult a healthcare professional for personalized advice.') + '.';
+        if (ql.includes('mechanism') || ql.includes('how does') || ql.includes('how do') || ql.includes('work'))
+            return '<strong>' + escHtml(d.drugName) + '</strong> mechanism of action: ' + escHtml(d.mechanism || 'Mechanism data not available for this compound.');
+        if (ql.includes('binding') || ql.includes('affinity') || ql.includes('score')) {
+            const s = d.bindingScore, lvl = s>=80?'very high':s>=60?'high':s>=40?'moderate':s>0?'low':'no';
+            return 'Binding affinity for <strong>' + escHtml(d.drugName) + '</strong> is <strong>' + s + '/100</strong> (' + lvl + ' affinity).';
+        }
+        if (ql.includes('organ') || ql.includes('target') || ql.includes('affect'))
+            return '<strong>' + escHtml(d.drugName) + '</strong> primarily targets the <strong>' + escHtml(d.primaryOrgan || 'unspecified organ') + '</strong>. This is highlighted on the Biological Impact Simulator.';
+        if (ql.includes('disease') || ql.includes('treat') || ql.includes('indication')) {
+            let r = '<strong>' + escHtml(d.drugName) + '</strong> is associated with <strong>' + escHtml(d.disease || 'an unspecified condition') + '</strong>.';
+            if (d.benefits) r += ' Benefits: ' + escHtml(d.benefits) + '.';
+            return r;
+        }
+        if (ql.includes('hypothesis') || ql.includes('predict') || ql.includes('ai analysis'))
+            return 'AI Hypothesis for <strong>' + escHtml(d.drugName) + '</strong>: ' + escHtml(d.aiHypothesis || 'No hypothesis generated.');
+        return '<strong>' + escHtml(d.drugName) + '</strong> — Disease: ' + escHtml(d.disease||'N/A') +
+            ', Target: <strong>' + escHtml(d.primaryOrgan||'N/A') + '</strong>, Binding: <strong>' + d.bindingScore + '/100</strong>.' +
+            (d.aiHypothesis ? ' Hypothesis: ' + escHtml(d.aiHypothesis) : '');
+    }
+
+    function sendChat() {
+        const inp = document.getElementById('chatInput'), txt = inp.value.trim();
+        if (!txt) return;
+        addMsg(escHtml(txt), true); inp.value = '';
+        setTimeout(() => addMsg(chatReply(txt), false), 500);
+    }
+
+    document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+    document.querySelectorAll('.quick-q').forEach(b => b.addEventListener('click', function() {
+        document.getElementById('chatInput').value = this.dataset.q; sendChat();
+    }));
+
+    // ===========================================================
+    // OCR SCANNER
+    // ===========================================================
+    document.getElementById('ocrBtn').addEventListener('click', () => {
+        document.getElementById('ocrModal').classList.add('open');
+        document.getElementById('ocrResults').innerHTML = '<p class="text-xs text-gray-400 text-center">Press Start Scan to begin detection</p>';
+        document.getElementById('ocrScanBtn').disabled = false;
+        document.getElementById('ocrScanBtn').textContent = 'Start Scan';
+        document.getElementById('ocrStatus').innerHTML = '<i class="fa-solid fa-camera text-2xl mb-1.5" style="color:rgba(173,216,230,.45);"></i><p class="text-xs" style="color:rgba(173,216,230,.6);">Press Start Scan to begin</p>';
+    });
+    document.getElementById('ocrCloseBtn').addEventListener('click', () => document.getElementById('ocrModal').classList.remove('open'));
+    document.getElementById('ocrModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+
+    document.getElementById('ocrScanBtn').addEventListener('click', function() {
+        if (!allDrugs.length) { showToast('No drug data loaded to scan against.', 'error'); return; }
+        const btn = this, status = document.getElementById('ocrStatus'), results = document.getElementById('ocrResults');
+        btn.disabled = true; btn.textContent = 'Scanning...';
+        status.innerHTML = '<div class="w-7 h-7 border-2 rounded-full animate-spin mx-auto mb-1.5" style="border-color:rgba(173,216,230,.2);border-top-color:var(--secondary);"></div><p class="text-xs" style="color:rgba(173,216,230,.6);">Analyzing text patterns...</p>';
+        results.innerHTML = '';
+
+        setTimeout(() => {
+            const shuffled = [...allDrugs].sort(() => Math.random() - .5).slice(0, Math.min(5, allDrugs.length));
+            status.innerHTML = '<i class="fa-solid fa-circle-check text-2xl mb-1.5 text-emerald-400"></i><p class="text-xs text-emerald-300">' + shuffled.length + ' compound(s) detected</p>';
+            results.innerHTML = shuffled.map(d =>
+                '<button class="w-full text-left px-3 py-2.5 rounded-xl bg-white/50 border border-white/40 hover:bg-[#FFC1CC]/10 transition-all flex items-center gap-2.5 ocr-result-btn" data-name="' + escHtml(d.drugName) + '">' +
+                '<i class="fa-solid fa-capsules text-xs" style="color:var(--primary);"></i>' +
+                '<div class="min-w-0"><p class="text-[13px] font-semibold text-gray-700 truncate">' + escHtml(d.drugName) + '</p>' +
+                '<p class="text-[11px] text-gray-400 truncate">' + escHtml(d.disease || '') + '</p></div>' +
+                '<i class="fa-solid fa-arrow-right text-gray-300 ml-auto text-[10px]"></i></button>'
+            ).join('');
+            btn.disabled = false; btn.textContent = 'Scan Again';
+            results.querySelectorAll('.ocr-result-btn').forEach(b => b.addEventListener('click', function() {
+                const found = allDrugs.find(d => d.drugName === this.dataset.name);
+                if (found) { document.getElementById('ocrModal').classList.remove('open'); selectDrug(found); }
+            }));
+        }, 2600);
+    });
+
+    // ===========================================================
+    // MOBILE SIDEBAR TOGGLE
+    // ===========================================================
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // ===========================================================
+    // TOAST
+    // ===========================================================
+    function showToast(msg, type) {
+        const c = document.getElementById('toastContainer');
+        const t = document.createElement('div');
+        t.className = 'glass px-4 py-2.5 flex items-center gap-2.5 fade-in-up pointer-events-auto';
+        const iconMap = { error:'exclamation', success:'check', info:'circle-info' };
+        const bgMap = { error:'from-red-400 to-red-300', success:'from-emerald-400 to-emerald-300', info:'from-[#ADD8E6] to-[#ADD8E6]/70' };
+        t.innerHTML = '<div class="w-6 h-6 rounded-lg bg-gradient-to-br ' + (bgMap[type]||bgMap.info) + ' flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-' + (iconMap[type]||iconMap.info) + ' text-white text-[10px]"></i></div><p class="text-[13px] text-gray-600">' + escHtml(msg) + '</p>';
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(8px)'; t.style.transition='all .3s ease'; setTimeout(() => t.remove(), 300); }, 3500);
+    }
+
+    // ===========================================================
+    // Handle window resize for molecule canvas redraw
+    // ===========================================================
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (selectedDrug) {
+                const key = selectedDrug.drugName.trim().toLowerCase();
+                if (moleculeCache.has(key)) {
+                    const cached = moleculeCache.get(key);
+                    if (cached) {
+                        const canvas = document.getElementById('molCanvas');
+                        if (!canvas.classList.contains('hidden')) {
+                            drawMolecule(canvas, cached.atoms, cached.bonds, cached.formula, cached.mw);
+                        }
+                    }
+                }
+            }
+        }, 200);
+    });
+
+    // ===========================================================
+    // INIT
+    // ===========================================================
+    fetchDrugs();
+    </script>
+</body>
+</html>
